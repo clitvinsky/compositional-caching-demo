@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Visual Reuse Demo</title>
+<link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        primary: '#14b8a6',
+        'primary-light': '#2dd4bf',
+        'primary-dim': '#0d9488',
+        secondary: '#3b82f6',
+        surface: '#0f0f13',
+        card: '#1a1a22',
+        elevated: '#12121a',
+      },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
+      }
+    }
+  }
+}
+</script>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="bg-surface text-white/[0.92] font-sans h-screen flex flex-col overflow-hidden">
+
+<!-- ─── Header (48px) ─── -->
+<header class="h-12 shrink-0 px-6 flex items-center justify-between bg-elevated border-b border-white/[0.08]">
+  <div class="flex items-center gap-3">
+    <a href="/" class="flex items-center gap-2 text-white/50 hover:text-white/80 transition-colors" title="Back to launcher">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+    </a>
+    <span class="text-sm font-semibold tracking-tight text-white/90">Visual Reuse Demo</span>
+  </div>
+  <div class="flex items-center gap-6">
+    <div id="health-status" class="hidden lg:flex items-center gap-3 text-[10px] text-white/30 font-mono">
+      <span id="h-mode" class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white/20"></span>Mock</span>
+      <span id="h-parts" class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white/20"></span>Parts</span>
+    </div>
+    <nav class="flex">
+      <button class="tab-btn active" data-tab="image" onclick="switchTab('image')">Imagery</button>
+      <button class="tab-btn" data-tab="analytics" onclick="switchTab('analytics')">Analytics</button>
+    </nav>
+  </div>
+</header>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- TAB: Imagery                                                        -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div id="panel-image" class="tab-panel flex-1 flex flex-col min-h-0">
+
+  <!-- Controls (presets + prompt input) -->
+  <div class="shrink-0 px-6 py-3 border-b border-white/[0.08]">
+    <div id="img-presets" class="flex flex-wrap gap-1.5 mb-2"></div>
+    <div class="flex gap-2">
+      <input id="img-prompt" type="text" placeholder="Describe the fashion outfit and scene..."
+        class="flex-1 bg-card border border-white/[0.08] rounded-md px-4 py-2.5 text-sm text-white/90 placeholder-white/30 focus:border-primary focus:outline-none font-sans transition-colors"
+        onkeydown="if(event.key==='Enter')runImage()">
+      <button id="img-run-btn" onclick="runImage()" class="btn-primary px-5 py-2.5 rounded-md text-sm font-semibold">Generate</button>
+      <button onclick="resetReuse()" class="btn-ghost px-3 py-2.5 rounded-md text-xs text-red-400/70 border border-red-900/30 hover:bg-red-900/10 hover:text-red-400">Reset</button>
+    </div>
+  </div>
+
+  <!-- Main 2-column area -->
+  <div class="flex-1 min-h-0 px-6 py-4">
+    <div class="h-full max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_44%] gap-5">
+
+      <!-- Left: Hero Image -->
+      <div class="relative bg-card border border-white/[0.08] rounded-lg overflow-hidden min-h-[280px]">
+        <div id="img-display" class="absolute inset-0 flex items-center justify-center">
+          <span class="text-white/20 text-sm">Click a preset to begin the demo</span>
+        </div>
+      </div>
+
+      <!-- Right: Metadata Column -->
+      <div class="flex flex-col gap-3 overflow-y-auto min-h-0 scrollbar-thin">
+
+        <!-- Reuse result summary row -->
+        <div class="flex items-center gap-3 flex-wrap min-h-[28px]">
+          <span id="img-reuse-badge"></span>
+          <span id="img-total-latency" class="font-mono text-sm text-white/40">--</span>
+          <span class="text-white/10">|</span>
+          <span id="img-cost" class="font-mono text-sm text-white/40">--</span>
+        </div>
+
+        <!-- Workflow Path Visualization -->
+        <div class="bg-card border border-white/[0.08] rounded-lg p-3">
+          <div class="section-label mb-2">Workflow Path</div>
+          <div id="reuse-pipeline" class="flex items-center gap-1">
+            <div class="pipeline-tier" id="pipe-l1">
+              <div class="pipeline-icon">1</div>
+              <div class="pipeline-name">Exact Reuse</div>
+              <div class="pipeline-time">fast</div>
+            </div>
+            <div class="pipeline-arrow">&rarr;</div>
+            <div class="pipeline-tier" id="pipe-l2">
+              <div class="pipeline-icon">2</div>
+              <div class="pipeline-name">Partial Reuse</div>
+              <div class="pipeline-time">medium</div>
+            </div>
+            <div class="pipeline-arrow">&rarr;</div>
+            <div class="pipeline-tier" id="pipe-gen">
+              <div class="pipeline-icon">3</div>
+              <div class="pipeline-name">New Work</div>
+              <div class="pipeline-time">slow</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Part Breakdown (4x2 grid) -->
+        <div class="bg-card border border-white/[0.08] rounded-lg p-3">
+          <div class="section-label mb-2">Part Breakdown</div>
+          <div id="part-breakdown" class="grid grid-cols-4 gap-1.5">
+            <div class="part-tile" data-part="Face &amp; Hair"><span class="part-tile-name">Face &amp; Hair</span><span class="part-tile-status">--</span></div>
+            <div class="part-tile" data-part="Upper Body"><span class="part-tile-name">Upper Body</span><span class="part-tile-status">--</span></div>
+            <div class="part-tile" data-part="Upper Garment"><span class="part-tile-name">Upper Garment</span><span class="part-tile-status">--</span></div>
+            <div class="part-tile" data-part="Lower Garment"><span class="part-tile-name">Lower Garment</span><span class="part-tile-status">--</span></div>
+            <div class="part-tile" data-part="Footwear"><span class="part-tile-name">Footwear</span><span class="part-tile-status">--</span></div>
+            <div class="part-tile" data-part="Background"><span class="part-tile-name">Background</span><span class="part-tile-status">--</span></div>
+            <div class="part-tile" data-part="Style &amp; Lighting"><span class="part-tile-name">Style &amp; Light</span><span class="part-tile-status">--</span></div>
+            <div class="part-tile" data-part="Framing Guide"><span class="part-tile-name">Framing</span><span class="part-tile-status">--</span></div>
+          </div>
+        </div>
+
+        <!-- Metrics detail -->
+        <div class="bg-card border border-white/[0.08] rounded-lg p-3">
+          <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-[13px]">
+            <div class="flex justify-between">
+              <span class="text-white/35">Change Type</span>
+              <span id="img-change-type" class="font-mono text-white/50">--</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/35">Parts Reused</span>
+              <span id="img-parts-reused" class="font-mono text-emerald-400/80">--</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/35">Cost Saved</span>
+              <span id="img-cost-detail" class="font-mono text-white/50">--</span>
+            </div>
+            <div class="flex justify-between">
+              <span class="text-white/35">Regenerated</span>
+              <span id="img-parts-refresh" class="font-mono text-amber-400/80">--</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Source Image + Reusable Parts -->
+        <div id="source-character" class="grid grid-cols-[80px_1fr] gap-3">
+          <!-- Canonical image -->
+          <div class="bg-card border border-dashed border-white/[0.12] rounded-lg p-1.5 cursor-pointer transition-colors hover:border-primary/40 flex flex-col items-center justify-center"
+               ondragover="event.preventDefault(); this.classList.add('border-primary','bg-primary/5')"
+               ondragleave="this.classList.remove('border-primary','bg-primary/5')"
+               ondrop="handleCanonicalDrop(event)"
+               onclick="document.getElementById('canonical-file-input').click()">
+            <input type="file" id="canonical-file-input" accept="image/*" class="hidden" onchange="handleCanonicalSelect(event)">
+            <img id="canonical-img" src="/static/maya_character.png" alt="Canonical" class="w-14 h-[72px] object-cover rounded border border-white/[0.08]">
+            <div class="section-label mt-1">Source</div>
+          </div>
+          <!-- Reusable Parts -->
+          <div class="bg-card border border-white/[0.08] rounded-lg p-2">
+            <div class="section-label mb-1">Reusable Parts</div>
+            <div id="parts-grid" class="grid grid-cols-4 gap-1">
+              <div class="comp-part-tile"><span class="text-white/15 text-[7px]">1</span></div>
+              <div class="comp-part-tile"><span class="text-white/15 text-[7px]">2</span></div>
+              <div class="comp-part-tile"><span class="text-white/15 text-[7px]">3</span></div>
+              <div class="comp-part-tile"><span class="text-white/15 text-[7px]">4</span></div>
+              <div class="comp-part-tile"><span class="text-white/15 text-[7px]">5</span></div>
+              <div class="comp-part-tile"><span class="text-white/15 text-[7px]">6</span></div>
+              <div class="comp-part-tile"><span class="text-white/15 text-[7px]">7</span></div>
+              <div class="comp-part-tile"><span class="text-white/15 text-[7px]">8</span></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end right column -->
+    </div>
+  </div>
+
+  <!-- History strip -->
+  <div class="shrink-0 px-6 py-2 border-t border-white/[0.08] bg-elevated">
+    <div class="flex items-center gap-3 max-w-[1600px] mx-auto">
+      <span class="section-label shrink-0">History</span>
+      <div id="img-history-list" class="flex gap-2 overflow-x-auto py-1 scrollbar-thin"></div>
+    </div>
+  </div>
+
+</div><!-- end panel-image -->
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- TAB: Analytics                                                      -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div id="panel-analytics" class="tab-panel hidden flex-1 overflow-y-auto">
+  <div class="max-w-5xl mx-auto p-6 space-y-6">
+
+    <!-- Top stats -->
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div class="bg-card border border-white/[0.08] rounded-lg p-4 text-center">
+        <div class="text-3xl font-bold text-primary font-mono" id="stat-runs">0</div>
+        <div class="section-label mt-1">Total Runs</div>
+      </div>
+      <div class="bg-card border border-white/[0.08] rounded-lg p-4 text-center">
+        <div class="text-3xl font-bold text-emerald-400 font-mono" id="stat-hit-rate">0%</div>
+        <div class="section-label mt-1">Part Reuse Rate</div>
+      </div>
+      <div class="bg-card border border-white/[0.08] rounded-lg p-4 text-center">
+        <div class="text-3xl font-bold text-secondary font-mono" id="stat-calls">0</div>
+        <div class="section-label mt-1">Part Checks</div>
+      </div>
+      <div class="bg-card border border-white/[0.08] rounded-lg p-4 text-center">
+        <div class="text-3xl font-bold text-emerald-400 font-mono" id="stat-saved">$0</div>
+        <div class="section-label mt-1">Cost Saved</div>
+      </div>
+    </div>
+
+    <!-- Per-demo breakdown -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div class="bg-card border border-white/[0.08] rounded-lg p-5">
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider mb-4">Reuse Performance</h3>
+        <div class="space-y-3">
+          <div class="flex justify-between text-sm">
+            <span class="text-white/40">Runs</span>
+            <span id="img-stat-runs" class="font-mono">0</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-white/40">Part Reuse Rate</span>
+            <span id="img-stat-rate" class="font-mono text-emerald-400">0%</span>
+          </div>
+          <div>
+            <div class="flex justify-between text-xs text-white/40 mb-1">
+              <span>Part Performance</span>
+              <span><span id="img-stat-hits">0</span> hits / <span id="img-stat-misses">0</span> misses</span>
+            </div>
+            <div class="h-2 bg-white/[0.04] rounded-full overflow-hidden">
+              <div id="img-stat-bar" class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-white/40">Cost Saved</span>
+            <span id="img-stat-saved" class="font-mono text-emerald-400">$0</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-card border border-white/[0.08] rounded-lg p-5">
+        <h3 class="text-sm font-semibold text-primary uppercase tracking-wider mb-4">Change Type Distribution</h3>
+        <div id="change-type-bars" class="space-y-3">
+          <div class="text-white/30 text-sm">No data yet</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="text-center">
+      <button onclick="resetReuse()" class="text-xs text-red-400/60 hover:text-red-400 underline">Reset all analytics</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
