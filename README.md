@@ -9,6 +9,10 @@ A small, offline demo that shows a simple product idea: when a user makes a rela
 The rendering pipeline is intentionally mock-only, with deterministic demo responses and static image assets. The routing decisions are real: every request goes through
 [epic-cache-router-lab](https://github.com/clitvinsky/epic-cache-router-lab), a tested cache-routing and continuity-evals library, and the UI shows its decision next to the visual result.
 
+![Demo with the Decision Layer card populated](docs/screenshots/demo_decision_layer.png)
+
+*The "Red Heels Only" preset: the visual diff is one accessory, but the router escalates to identity-locked regeneration because the edit chain is already deep. Route, rationale, drift, continuity gates, risk flags, and the FLUX.2 klein backend profile are all visible per request.*
+
 ## What It Shows
 
 - **New result:** first request in a session.
@@ -50,6 +54,8 @@ clean regeneration before drift accumulates. Session analytics report the
 cost of the routed plan against an everything-fresh baseline (46% avoided
 on the preset arc), average drift, and an unsafe-reuse tripwire that stays
 at zero while routing behaves.
+
+![Analytics with the Decision Layer section](docs/screenshots/analytics_router.png)
 
 Costs are normalized planning units from the router's cost model, separate
 from the illustrative dollar figures in the visual pipeline.
