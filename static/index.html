@@ -117,6 +117,27 @@ tailwind.config = {
           </div>
         </div>
 
+        <!-- Decision Layer (epic-cache-router-lab) -->
+        <div class="bg-card border border-white/[0.08] rounded-lg p-3">
+          <div class="flex items-center justify-between mb-2">
+            <div class="section-label">Decision Layer
+              <a href="https://github.com/clitvinsky/epic-cache-router-lab" target="_blank" rel="noopener"
+                 class="text-white/25 hover:text-primary-light normal-case font-mono text-[10px] ml-1">epic-cache-router-lab</a>
+            </div>
+            <span id="dl-route-badge"></span>
+          </div>
+          <div id="dl-rationale" class="text-xs text-white/45 mb-2">Run a request to see the routing decision.</div>
+          <div class="grid grid-cols-2 gap-x-6 gap-y-1.5 text-[12px]">
+            <div class="flex justify-between"><span class="text-white/35">Mode</span><span id="dl-mode" class="font-mono text-white/60">--</span></div>
+            <div class="flex justify-between"><span class="text-white/35">Start from</span><span id="dl-start" class="font-mono text-white/60">--</span></div>
+            <div class="flex justify-between"><span class="text-white/35">Drift</span><span id="dl-drift" class="font-mono text-white/60">--</span></div>
+            <div class="flex justify-between"><span class="text-white/35">Cost units</span><span id="dl-cost" class="font-mono text-white/60">--</span></div>
+            <div class="flex justify-between"><span class="text-white/35">Matched</span><span id="dl-matched" class="font-mono text-white/60">--</span></div>
+            <div class="flex justify-between"><span class="text-white/35">Gates</span><span id="dl-gates" class="font-mono text-white/60">--</span></div>
+          </div>
+          <div id="dl-flags" class="mt-2 flex flex-wrap gap-1"></div>
+        </div>
+
         <!-- Part Breakdown (4x2 grid) -->
         <div class="bg-card border border-white/[0.08] rounded-lg p-3">
           <div class="section-label mb-2">Part Breakdown</div>
@@ -255,6 +276,59 @@ tailwind.config = {
         <h3 class="text-sm font-semibold text-primary uppercase tracking-wider mb-4">Change Type Distribution</h3>
         <div id="change-type-bars" class="space-y-3">
           <div class="text-white/30 text-sm">No data yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Decision layer analytics -->
+    <div class="bg-card border border-white/[0.08] rounded-lg p-5">
+      <h3 class="text-sm font-semibold text-primary uppercase tracking-wider mb-1">Decision Layer
+        <a href="https://github.com/clitvinsky/epic-cache-router-lab" target="_blank" rel="noopener"
+           class="text-white/25 hover:text-primary-light normal-case font-mono text-[10px] ml-1">epic-cache-router-lab</a>
+      </h3>
+      <p class="text-xs text-white/35 mb-4">Every request routes through the cache-router library. Costs are normalized planning units (fresh generation = 1.0), not vendor pricing.</p>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+        <div class="text-center">
+          <div class="text-2xl font-bold text-emerald-400 font-mono" id="dl-stat-savings">--</div>
+          <div class="section-label mt-1">Est. Savings</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-secondary font-mono" id="dl-stat-avoided">--</div>
+          <div class="section-label mt-1">Avoided Model Calls</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold text-amber-400 font-mono" id="dl-stat-drift">--</div>
+          <div class="section-label mt-1">Avg Drift</div>
+        </div>
+        <div class="text-center">
+          <div class="text-2xl font-bold font-mono" id="dl-stat-unsafe">--</div>
+          <div class="section-label mt-1">Unsafe Reuse</div>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <div class="text-xs text-white/40 mb-2">Route Distribution</div>
+          <div id="dl-route-bars" class="space-y-2">
+            <div class="text-white/30 text-sm">No data yet</div>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <div class="flex justify-between text-sm">
+            <span class="text-white/40">Baseline cost (all fresh)</span>
+            <span id="dl-stat-baseline" class="font-mono">--</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-white/40">Routed cost</span>
+            <span id="dl-stat-routed" class="font-mono text-emerald-400">--</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-white/40">Review-flagged runs</span>
+            <span id="dl-stat-review" class="font-mono">--</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-white/40">Stored prior panels</span>
+            <span id="dl-stat-panels" class="font-mono">--</span>
+          </div>
         </div>
       </div>
     </div>

@@ -102,15 +102,34 @@ Expected UI:
 - `7/8` reused
 - only footwear/accessory marked new
 
-### 6. Show The Analytics
+### 6. Show The Decision Layer
+
+Point at the **Decision Layer** card while re-running two presets.
+
+Explain:
+
+- The visuals are mocked, but the routing decision is real. Every request runs through
+  [epic-cache-router-lab](https://github.com/clitvinsky/epic-cache-router-lab), a separate
+  tested library, imported as a dependency.
+- The card shows the chosen route, the router's rationale, continuity drift against the
+  matched prior result, and the normalized cost of the plan.
+- On `Red Heels Only`, the router escalates to identity-locked regeneration even though the
+  visual diff is small. The edit chain is already deep, and repeated patching accumulates
+  drift. That gate is the difference between a cache and a decision layer.
+
+### 7. Show The Analytics
 
 Open the **Analytics** tab.
 
 Explain:
 
 - The demo records run count, reused parts, refreshed parts, and illustrative cost savings.
-- The numbers are mock values for product explanation, not production benchmarks.
+- The Decision Layer section shows route distribution, an everything-fresh cost baseline
+  versus the routed cost (about 46% avoided on the preset arc), average drift, and an
+  unsafe-reuse tripwire that stays at zero while routing behaves.
+- The visual-pipeline numbers are mock values for product explanation, not production
+  benchmarks; the router costs are normalized planning units.
 
 ## Closing Line
 
-The point is simple: related requests often contain reusable visible structure. This demo makes the difference between reuse and regeneration easy to see.
+The point is simple: related requests often contain reusable visible structure. This demo makes the difference between reuse and regeneration easy to see, and shows the decision layer that keeps reuse safe.

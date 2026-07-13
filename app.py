@@ -22,6 +22,8 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from PIL import Image, ImageDraw, ImageEnhance, ImageOps, ImageStat
 
+from router_bridge import DecisionLayer
+
 
 BASE_DIR = Path(__file__).parent
 STATIC_DIR = BASE_DIR / "static"
@@ -68,6 +70,7 @@ _stats: list[RunRecord] = []
 _last_prompt: str | None = None
 _last_hash: str | None = None
 _seen_prompts: dict[str, str] = {}
+_decision_layer = DecisionLayer()
 
 
 IMAGE_PRESETS = [
@@ -121,6 +124,7 @@ async def health_check():
         "status": "healthy",
         "demo_mode": "mock",
         "reuse_engine_ready": True,
+        "decision_layer_ready": True,
         "parts_ready": (ASSETS_DIR / "parts_manifest.json").exists(),
     }
 
@@ -141,6 +145,7 @@ async def run_image(body: ImageRequest):
 
     change_type = _classify_prompt(prompt)
     reused, regenerated = _reuse_plan(change_type)
+    router_info = _decision_layer.decide(prompt)
 
     if change_type == "no_change" and prompt in _seen_prompts:
         img_hash = _seen_prompts[prompt]
@@ -177,6 +182,7 @@ async def run_image(body: ImageRequest):
         "parts_reused": reused,
         "parts_refreshed": ["all"] if change_type == "full_miss" else regenerated,
         "stored_result_count": len(_seen_prompts),
+        "router": router_info,
     }
 
 
@@ -208,6 +214,7 @@ async def get_analytics():
         "total_cost_saved": image["cost_saved"],
         "image": image,
         "change_types": change_types,
+        "router": _decision_layer.analytics(),
     }
 
 
@@ -219,6 +226,7 @@ async def reset_demo():
     _seen_prompts.clear()
     _last_prompt = None
     _last_hash = None
+    _decision_layer.reset()
     for path in IMAGE_OUTPUT_DIR.glob("*.png"):
         path.unlink(missing_ok=True)
     (ASSETS_DIR / "parts_manifest.json").unlink(missing_ok=True)
