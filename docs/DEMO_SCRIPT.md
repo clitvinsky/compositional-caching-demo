@@ -116,6 +116,11 @@ Explain:
 - On `Red Heels Only`, the router escalates to identity-locked regeneration even though the
   visual diff is small. The edit chain is already deep, and repeated patching accumulates
   drift. That gate is the difference between a cache and a decision layer.
+- The Backend and Ref K/V rows show how each route would execute on FLUX.2 klein: edit
+  routes map to multi-reference editing on klein-9b-kv, where reference K/V is computed
+  once at step 0 and reused across the request's denoising steps. That reuse is
+  intra-request execution acceleration; the routing decisions here are cross-request.
+  Different axes, and they compose. (Documented mapping only, no model is called.)
 
 ### 7. Show The Analytics
 

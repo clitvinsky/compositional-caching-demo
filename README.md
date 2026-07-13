@@ -54,12 +54,28 @@ at zero while routing behaves.
 Costs are normalized planning units from the router's cost model, separate
 from the illustrative dollar figures in the visual pipeline.
 
+### Backend Profile: FLUX.2 klein
+
+Each route also carries a documented execution profile for a real backend,
+Black Forest Labs' FLUX.2 klein: fresh generations map to 4-step klein-4b
+text-to-image, edit routes map to klein-9b-kv multi-reference editing where
+reference-token K/V is computed once at step 0 and reused across the
+denoising steps of that request (BFL publishes 1.21-2.66x for this).
+
+That reference-KV reuse is intra-request execution acceleration; the
+decision layer works across requests. The two compose and are deliberately
+kept distinct. Details, the full route-to-execution table, and licensing
+notes (klein-4b is Apache 2.0; the 9B variants including 9b-kv are FLUX
+Non-Commercial) are in [docs/backend_profiles.md](docs/backend_profiles.md).
+No model is downloaded or called; the demo stays mock and deterministic.
+
 ## Project Layout
 
 | Path | Purpose |
 |---|---|
 | `app.py` | FastAPI mock API and deterministic image/part generation |
 | `router_bridge.py` | Maps prompts to epic-cache-router-lab requests and tracks session panels |
+| `backend_profiles.py` | Documented route-to-FLUX.2-klein execution mapping |
 | `static/` | Browser UI |
 | `assets/source_character.png` | Local demo reference image |
 | `tests/` | Decision-layer and API tests |

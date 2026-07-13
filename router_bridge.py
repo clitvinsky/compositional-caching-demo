@@ -37,6 +37,8 @@ from epic_cache_router_lab.router import (
     ROUTE_SURGICAL_EDIT,
 )
 
+from backend_profiles import profile_for_route
+
 SUBJECT = ("maya",)
 LOCATION = "studio_frame"
 CAMERA = "full_body"
@@ -144,6 +146,7 @@ class DecisionLayer:
             "estimated_cost_units": plan.estimated_cost_units,
             "requires_model_call": plan.requires_model_call,
             "requires_review": plan.requires_review,
+            "backend_profile": profile_for_route(decision.route).to_dict(),
             "continuity": continuity.to_dict(),
             "request_metadata": {
                 "characters": list(request.characters),

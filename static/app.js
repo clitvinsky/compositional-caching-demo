@@ -214,6 +214,28 @@ function renderDecisionLayer(router) {
     gatesEl.className = 'font-mono text-white/60';
   }
 
+  const backend = router.backend_profile || {};
+  const backendEl = document.getElementById('dl-backend');
+  const OPERATION_LABELS = {
+    'serve_cached': 'serve cached',
+    'multi_reference_edit': 'klein multi-ref edit',
+    'multi_reference_regen': 'klein multi-ref regen',
+    'text_to_image': 'klein txt2img',
+    'hold_for_review': 'hold',
+  };
+  backendEl.textContent = OPERATION_LABELS[backend.operation] || '--';
+  if (backend.detail) backendEl.title = backend.detail;
+
+  const refkvEl = document.getElementById('dl-refkv');
+  if (backend.reference_kv) {
+    refkvEl.textContent = 'step-0, reused x' + (backend.steps || 4);
+    refkvEl.className = 'font-mono text-emerald-400/80';
+    if (backend.published_speedup) refkvEl.title = backend.published_speedup;
+  } else {
+    refkvEl.textContent = 'n/a';
+    refkvEl.className = 'font-mono text-white/40';
+  }
+
   const chips = [];
   (router.risk_flags || []).forEach(f => chips.push('<span class="dl-chip">' + f + '</span>'));
   (cont.failure_reasons || []).forEach(r => chips.push('<span class="dl-chip dl-chip-warn">' + r + '</span>'));
@@ -224,7 +246,7 @@ function renderDecisionLayer(router) {
 function resetDecisionLayer() {
   document.getElementById('dl-route-badge').innerHTML = '';
   document.getElementById('dl-rationale').textContent = 'Run a request to see the routing decision.';
-  ['dl-mode', 'dl-start', 'dl-drift', 'dl-cost', 'dl-matched', 'dl-gates'].forEach(id => {
+  ['dl-mode', 'dl-start', 'dl-drift', 'dl-cost', 'dl-matched', 'dl-gates', 'dl-backend', 'dl-refkv'].forEach(id => {
     const el = document.getElementById(id);
     el.textContent = '--';
     el.className = 'font-mono text-white/60';
