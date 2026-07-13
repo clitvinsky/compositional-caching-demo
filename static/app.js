@@ -161,6 +161,130 @@ function resetPartBreakdown() {
 }
 
 // ---------------------------------------------------------------------------
+// Decision Layer (epic-cache-router-lab)
+// ---------------------------------------------------------------------------
+
+const ROUTE_BADGES = {
+  'return_cached': '<span class="badge badge-hit">RETURN CACHED</span>',
+  'surgical_edit': '<span class="badge badge-partial">SURGICAL EDIT</span>',
+  'camera_or_pose_change': '<span class="badge badge-partial">CAMERA / POSE</span>',
+  'identity_locked_regen': '<span class="badge badge-regen">IDENTITY-LOCKED REGEN</span>',
+  'fresh_generation': '<span class="badge badge-miss">FRESH GENERATION</span>',
+  'manual_review': '<span class="badge badge-review">MANUAL REVIEW</span>',
+};
+
+const ROUTE_LABELS = {
+  'return_cached': 'Return Cached',
+  'surgical_edit': 'Surgical Edit',
+  'camera_or_pose_change': 'Camera / Pose',
+  'identity_locked_regen': 'Identity-Locked Regen',
+  'fresh_generation': 'Fresh Generation',
+  'manual_review': 'Manual Review',
+};
+
+function renderDecisionLayer(router) {
+  if (!router) return;
+
+  document.getElementById('dl-route-badge').innerHTML =
+    ROUTE_BADGES[router.route] || '<span class="badge badge-miss">' + router.route + '</span>';
+  document.getElementById('dl-rationale').textContent = router.rationale || '';
+
+  document.getElementById('dl-mode').textContent = router.generation_mode || '--';
+  document.getElementById('dl-start').textContent = router.starting_point || '--';
+  document.getElementById('dl-matched').textContent = router.matched_panel_id || 'none';
+
+  const cont = router.continuity || {};
+  const driftEl = document.getElementById('dl-drift');
+  driftEl.textContent = (cont.drift_score != null) ? cont.drift_score.toFixed(3) : '--';
+  driftEl.className = 'font-mono ' + (cont.drift_score > 0.25 ? 'text-amber-400' : 'text-emerald-400/80');
+
+  const costEl = document.getElementById('dl-cost');
+  costEl.textContent = (router.estimated_cost_units != null) ? router.estimated_cost_units.toFixed(2) : '--';
+  costEl.className = 'font-mono ' + (router.estimated_cost_units === 0 ? 'text-emerald-400' : 'text-white/60');
+
+  const gatesEl = document.getElementById('dl-gates');
+  if (cont.passed === true) {
+    gatesEl.textContent = 'PASS';
+    gatesEl.className = 'font-mono text-emerald-400';
+  } else if (cont.passed === false) {
+    gatesEl.textContent = 'FAIL';
+    gatesEl.className = 'font-mono text-amber-400';
+  } else {
+    gatesEl.textContent = '--';
+    gatesEl.className = 'font-mono text-white/60';
+  }
+
+  const chips = [];
+  (router.risk_flags || []).forEach(f => chips.push('<span class="dl-chip">' + f + '</span>'));
+  (cont.failure_reasons || []).forEach(r => chips.push('<span class="dl-chip dl-chip-warn">' + r + '</span>'));
+  if (router.requires_review) chips.push('<span class="dl-chip dl-chip-warn">human review</span>');
+  document.getElementById('dl-flags').innerHTML = chips.join('');
+}
+
+function resetDecisionLayer() {
+  document.getElementById('dl-route-badge').innerHTML = '';
+  document.getElementById('dl-rationale').textContent = 'Run a request to see the routing decision.';
+  ['dl-mode', 'dl-start', 'dl-drift', 'dl-cost', 'dl-matched', 'dl-gates'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '--';
+    el.className = 'font-mono text-white/60';
+  });
+  document.getElementById('dl-flags').innerHTML = '';
+}
+
+function renderRouterAnalytics(router) {
+  if (!router) return;
+  const cost = router.cost || {};
+
+  const savings = cost.estimated_savings_ratio;
+  document.getElementById('dl-stat-savings').textContent =
+    (savings != null && cost.total_requests > 0) ? (savings * 100).toFixed(0) + '%' : '--';
+  document.getElementById('dl-stat-avoided').textContent =
+    (cost.avoided_model_calls != null) ? cost.avoided_model_calls : '--';
+  document.getElementById('dl-stat-drift').textContent =
+    (router.avg_drift_score != null) ? router.avg_drift_score.toFixed(3) : '--';
+
+  const unsafeEl = document.getElementById('dl-stat-unsafe');
+  unsafeEl.textContent = (router.unsafe_reuse_count != null) ? router.unsafe_reuse_count : '--';
+  unsafeEl.className = 'text-2xl font-bold font-mono ' +
+    (router.unsafe_reuse_count > 0 ? 'text-red-400' : 'text-emerald-400');
+
+  document.getElementById('dl-stat-baseline').textContent =
+    (cost.baseline_cost_units != null) ? cost.baseline_cost_units.toFixed(2) + ' units' : '--';
+  document.getElementById('dl-stat-routed').textContent =
+    (cost.routed_cost_units != null) ? cost.routed_cost_units.toFixed(2) + ' units' : '--';
+  document.getElementById('dl-stat-review').textContent =
+    (cost.review_count != null) ? cost.review_count : '--';
+  document.getElementById('dl-stat-panels').textContent =
+    (router.stored_panels != null) ? router.stored_panels : '--';
+
+  const barsEl = document.getElementById('dl-route-bars');
+  const dist = router.route_distribution || {};
+  const total = Object.values(dist).reduce((a, b) => a + b, 0);
+  if (total > 0) {
+    const colors = {
+      'return_cached': 'bg-emerald-500',
+      'surgical_edit': 'bg-blue-500',
+      'camera_or_pose_change': 'bg-sky-500',
+      'identity_locked_regen': 'bg-amber-500',
+      'fresh_generation': 'bg-red-500',
+      'manual_review': 'bg-purple-500',
+    };
+    barsEl.innerHTML = Object.entries(dist).map(([route, count]) => {
+      const pct = ((count / total) * 100).toFixed(0);
+      const barColor = colors[route] || 'bg-gray-500';
+      const lbl = ROUTE_LABELS[route] || route;
+      return '<div>' +
+        '<div class="flex justify-between text-xs mb-1"><span class="text-white/40">' + lbl + '</span><span class="text-white/30 font-mono">' + count + ' (' + pct + '%)</span></div>' +
+        '<div class="h-1.5 bg-white/[0.04] rounded-full overflow-hidden"><div class="h-full ' + barColor + ' rounded-full" style="width:' + pct + '%"></div></div>' +
+        '</div>';
+    }).join('');
+  } else {
+    barsEl.innerHTML = '<div class="text-white/30 text-sm">No data yet</div>';
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Image demo
 // ---------------------------------------------------------------------------
 
@@ -277,6 +401,9 @@ function displayResult(data) {
   // Pipeline visualization
   renderPipeline(data);
 
+  // Decision layer card
+  renderDecisionLayer(data.router);
+
   // Update prompt input
   if (data.prompt) {
     document.getElementById('img-prompt').value = data.prompt;
@@ -368,6 +495,8 @@ async function refreshAnalytics() {
       }).join('');
     }
 
+    renderRouterAnalytics(data.router);
+
   } catch (err) {
     // Silent fail
   }
@@ -386,6 +515,7 @@ async function resetReuse() {
     renderImageHistory();
     resetPartBreakdown();
     resetPipeline();
+    resetDecisionLayer();
     document.getElementById('img-reuse-badge').innerHTML = '';
     document.getElementById('img-change-type').textContent = '--';
     document.getElementById('img-change-type').className = 'font-mono text-white/50';

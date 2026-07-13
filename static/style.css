@@ -154,6 +154,31 @@
   color: #93bbfc;
   border: 1px solid rgba(59, 130, 246, 0.25);
 }
+.badge-regen {
+  background: rgba(251, 191, 36, 0.12);
+  color: #fcd34d;
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+.badge-review {
+  background: rgba(167, 139, 250, 0.12);
+  color: #c4b5fd;
+  border: 1px solid rgba(167, 139, 250, 0.25);
+}
+.dl-chip {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 9999px;
+  font-size: 0.6rem;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.dl-chip-warn {
+  background: rgba(251, 191, 36, 0.10);
+  color: #fcd34d;
+  border-color: rgba(251, 191, 36, 0.22);
+}
 /* ─── Workflow Path Visualization ─── */
 .pipeline-tier {
   flex: 1;

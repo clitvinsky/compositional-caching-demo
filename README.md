@@ -1,8 +1,13 @@
 # Visual Reuse Demo
 
+[![CI](https://github.com/clitvinsky/compositional-caching-demo/actions/workflows/ci.yml/badge.svg)](https://github.com/clitvinsky/compositional-caching-demo/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+
 A small, offline demo that shows a simple product idea: when a user makes a related image request, some visible parts of the prior result can be reused while only the changed parts are refreshed.
 
-This repository is intentionally mock-only. It runs locally with deterministic demo responses and static image assets.
+The rendering pipeline is intentionally mock-only, with deterministic demo responses and static image assets. The routing decisions are real: every request goes through
+[epic-cache-router-lab](https://github.com/clitvinsky/epic-cache-router-lab), a tested cache-routing and continuity-evals library, and the UI shows its decision next to the visual result.
 
 ## What It Shows
 
@@ -11,15 +16,53 @@ This repository is intentionally mock-only. It runs locally with deterministic d
 - **Outfit update:** same subject, different clothing.
 - **Accessory update:** small change to footwear.
 - **Repeat:** exact same request reused.
-- **Analytics:** run count, reuse rate, refreshed parts, and illustrative cost savings.
+- **Decision layer:** the route the cache router chose, its rationale, continuity drift, and normalized cost per request.
+- **Analytics:** run count, reuse rate, refreshed parts, illustrative cost savings, and router-level route distribution and cost avoidance.
+
+## Decision Layer
+
+The demo composes two repos. This one supplies the workflow and visuals; the
+routing logic is imported from
+[epic-cache-router-lab](https://github.com/clitvinsky/epic-cache-router-lab)
+and used as a real dependency, not a copy.
+
+`router_bridge.py` maps each prompt onto the router's continuity metadata.
+The workflow is subject-centric, so the scene and photographic style map to
+continuity tags, outfit items map to props, and the subject and framing stay
+constant. Every generated result is stored as an accepted prior panel; edit
+chains deepen `edit_depth`, regenerations reset it.
+
+Running the seven presets in order produces this arc:
+
+| Preset | Route | Why |
+|---|---|---|
+| Casual Denim, Cafe | `fresh_generation` | no prior work |
+| Same Look, Rooftop | `surgical_edit` | scene tag changed, shallow chain |
+| Same Look, Beach | `surgical_edit` | scene tag changed, edits from the original |
+| Evening Dress, Beach | `identity_locked_regen` | outfit change on a depth-1 edit chain |
+| Same Dress, Restaurant | `surgical_edit` | scene swap from the fresh regen |
+| Red Heels Only | `identity_locked_regen` | accessory change, but the chain is deep again |
+| Exact Repeat | `return_cached` | exact match, continuity gates pass |
+
+The two `identity_locked_regen` escalations are the point: a naive parts
+pipeline would keep patching, but the router's edit-depth gate forces a
+clean regeneration before drift accumulates. Session analytics report the
+cost of the routed plan against an everything-fresh baseline (46% avoided
+on the preset arc), average drift, and an unsafe-reuse tripwire that stays
+at zero while routing behaves.
+
+Costs are normalized planning units from the router's cost model, separate
+from the illustrative dollar figures in the visual pipeline.
 
 ## Project Layout
 
 | Path | Purpose |
 |---|---|
 | `app.py` | FastAPI mock API and deterministic image/part generation |
+| `router_bridge.py` | Maps prompts to epic-cache-router-lab requests and tracks session panels |
 | `static/` | Browser UI |
 | `assets/source_character.png` | Local demo reference image |
+| `tests/` | Decision-layer and API tests |
 | `docs/DEMO_SCRIPT.md` | Short talk track for the demo |
 
 Generated files are ignored by git:
@@ -78,7 +121,16 @@ Use the preset chips at the top of the UI:
 7. **Exact Repeat**  
    Same prompt again. Expected result: `8/8` reused.
 
-Then open the **Analytics** tab to see the session summary.
+Watch the **Decision Layer** card update on each run; then open the
+**Analytics** tab to see the session summary, including the router's route
+distribution and cost avoidance.
+
+## Tests
+
+```bash
+pip install -r requirements-dev.txt
+pytest
+```
 
 ## Docker
 
